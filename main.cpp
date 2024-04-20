@@ -153,18 +153,44 @@ int main()
 
     // executes python script to retrieve longitude/longitude using geocoding
     system("python geocoding.py");
-
     ifstream lat_long("lat_long.txt");
     if(!lat_long.is_open()){
         cout << "Error: Unable to open long_lat file" << endl;
         return 1;
     }
+    
+    // sets source hospital coordinates
     string source_longitude,source_latitude;
     if (getline(lat_long, source_latitude) && getline(lat_long, source_longitude)){
         source.latitude = stof(source_latitude);
         source.longitude = stof(source_longitude);
     }
 
-cout << "Main.cpp file : " << source.latitude << endl << source.longitude << endl;
-    return 0;
-}
+
+    ofstream coords("vector_hospital_names.txt", ios::app);
+
+    // set coords for all filtered hospitals
+    for(int i = 0; i < filtered.size(); i++){
+        coords.open("vector_hospital_names.txt", ios::out | ios::trunc);
+        coords << filtered[i].name << endl << filtered[i].city << endl << filtered[i].state << endl;
+         coords.close();
+
+        system("python geocoding_vector.py");
+        ifstream lat_long_vector("hospitals_names.txt");
+        string filtered_long,filtered_lat;
+        if(getline(lat_long_vector,filtered_lat) && getline(lat_long_vector,filtered_long)){
+            filtered[i].latitude = stof(filtered_lat);
+            filtered[i].longitude = stof(filtered_long);
+        }
+            cout << endl << endl <<  filtered[i].name << endl << "Latitude: " << filtered[i].latitude << " Longitude: " << filtered[i].longitude << endl << endl;
+            lat_long_vector.close();
+
+
+        }
+    }
+
+    
+
+
+
+
