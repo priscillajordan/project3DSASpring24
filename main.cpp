@@ -285,6 +285,62 @@ unordered_map<string, Hospital> dijkstra(const unordered_map<string, unordered_m
     return shortest_path;
 }
 
+vector<string> bellman(const unordered_map<string, unordered_map<string, float>> &distances, const string &start, const string &end)
+{
+    unordered_map<string, float> shortest_distances;
+    unordered_map<string, string> predecessors; // Map to store predecessors in the shortest path
+
+// initialize all the distances from the source other nodes as infinity
+// using abe's code from dijkstras
+for (const auto &[hospital, _] : distances)
+    {
+        shortest_distances[hospital] = numeric_limits<float>::infinity();
+        predecessors[hospital] = "";
+    }
+//set distance to start node as 0
+shortest_distances[start] = 0;
+
+// for every node in the graph, relax all n-1 edges 
+// conceptually based on https://www.geeksforgeeks.org/bellman-ford-algorithm-dp-23/
+for (unsigned int i = 1; i < distances.size(); ++i) {
+    for (const auto& node: distances) {
+        string current_hosp = node.first;
+        for (const auto& neighbor : node.second) {
+            string current_neighbor = neighbor.first;
+            float current_dist = neighbor.second;
+            if (shortest_distances[current_hosp] + current_dist < shortest_distances[current_neighbor]) {
+                 shortest_distances[current_neighbor] = shortest_distances[current_hosp] + current_dist;
+                    predecessors[current_neighbor] = current_hosp;
+            }
+        }
+    }
+}
+
+// since we created the graph, we know there are no negative weight cycles, but to 
+// fully implement bellman ford, have to check for negative weight cycles 
+for (unsigned int i = 1; i < distances.size(); ++i) {
+    for (const auto& node: distances) {
+        string current_hosp = node.first;
+        for (const auto& neighbor : node.second) {
+            string current_neighbor = neighbor.first;
+            float current_dist = neighbor.second;
+            if (shortest_distances[current_hosp] + current_dist < shortest_distances[current_neighbor]) {
+                 // if its still finding shorter path there's a negative weight cycle
+                 cout << "ERROR: negative cycle found" << endl;
+                 return {};
+            }
+        }
+    }
+}
+ // Reconstruct shortest path
+    vector<string> path;
+    for (string vertex = end; vertex != ""; vertex = predecessors[vertex]) {
+        path.insert(path.begin(), vertex);
+    }
+    
+    return path;
+
+}
 int main()
 {
     Data data;
@@ -381,4 +437,27 @@ int main()
          << endl
          << "Dijsktra's algorithm has taken " << dijkstras_duration.count() << " microseconds to find the shortest path from "
          << source.name << " to " << destination.name << endl << endl;
+
+    // implement bellman ford
+    cout << endl
+        << "Executing Bellman-Ford algorithm..." << endl
+        << endl;
+
+    // timer for bellman runtime
+    auto bellmans_timer_start = std::chrono::high_resolution_clock::now();
+    vector<string> shortest_path2 = bellman(distances, source.name, destination.name);
+    cout << "Shortest path from " << source.name << " to " << destination.name << ":" << endl;
+        for (const string& hospital : shortest_path2) {
+            cout << hospital << " -> ";
+        }
+        cout << endl;
+    auto bellmans_timer_stop = std::chrono::high_resolution_clock::now();
+    auto bellmans_duration = std::chrono::duration_cast<std::chrono::microseconds>(bellmans_timer_stop - bellmans_timer_start);
+
+    cout << endl
+         << endl
+         << "The Bellman-Ford algorithm has taken " << bellmans_duration.count() << " microseconds to find the shortest path from "
+         << source.name << " to " << destination.name << endl << endl;
+
+    
 }
