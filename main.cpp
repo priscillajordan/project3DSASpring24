@@ -112,14 +112,6 @@ struct Data
     }
 };
 
-struct CompareDistance
-{
-    bool operator()(const pair<string, float> &a, const pair<string, float> &b)
-    {
-        return a.second > b.second; // Min heap based on distance
-    }
-};
-
 vector<Hospital> filter_by_state(string state, vector<Hospital> &hospitals)
 {
     vector<Hospital> filtered;
@@ -193,9 +185,10 @@ float calculate_distance(float lat1, float long1, float lat2, float long2) // ca
     return distance;
 }
 
-unordered_map<string, unordered_map<string, float>> intialize_graph(vector<Hospital> &filtered)
-{ // creates graph using filtered hospitals vector
+unordered_map<string, unordered_map<string, float>> initialize_graph(vector<Hospital> &filtered, string &source_name, string &dest_name)
+{
     unordered_map<string, unordered_map<string, float>> distance_map;
+
     for (Hospital source_hospital : filtered)
     {
         unordered_map<string, float> from_distances;
@@ -203,7 +196,11 @@ unordered_map<string, unordered_map<string, float>> intialize_graph(vector<Hospi
         {
             if (source_hospital.name == destination_hospital.name)
             {
-                continue;
+                continue; // Skip adding the edge to itself
+            }
+            else if (source_hospital.name == source_name && destination_hospital.name == dest_name)
+            {
+                continue; // Skip adding the direct edge from source to destination (artificially create path between hospitals lol)
             }
             else
             {
@@ -213,6 +210,7 @@ unordered_map<string, unordered_map<string, float>> intialize_graph(vector<Hospi
         }
         distance_map.emplace(source_hospital.name, from_distances);
     }
+
     return distance_map;
 }
 
@@ -221,6 +219,7 @@ unordered_map<string, Hospital> dijkstra(const unordered_map<string, unordered_m
     unordered_map<string, float> shortest_distances;
     unordered_map<string, string> predecessors; // Map to store predecessors in the shortest path
     priority_queue<pair<float, string>, vector<pair<float, string>>, greater<pair<float, string>>> pq;
+    vector<string> traversal_order;
 
     // Initialize distances and predecessors
     for (const auto &[hospital, _] : distances)
@@ -240,15 +239,12 @@ unordered_map<string, Hospital> dijkstra(const unordered_map<string, unordered_m
         float curr_distance = top_pair.first;   // Extract the distance from the pair
         string curr_hospital = top_pair.second; // Extract the hospital name from the pair
 
-        if (curr_distance > shortest_distances[curr_hospital])
-        {
-            continue; // Skip if we've found a shorter path already
-        }
-
         if (curr_hospital == end) // Terminate when reaching the destination
         {
             break;
         }
+
+        traversal_order.push_back(curr_hospital); // Add the current hospital to traversal order
 
         for (const auto &[neighbor, edge_weight] : distances.at(curr_hospital))
         {
@@ -270,6 +266,18 @@ unordered_map<string, Hospital> dijkstra(const unordered_map<string, unordered_m
         shortest_path[current_hospital] = Hospital(current_hospital, 0, 0); // Create Hospital object with dummy coordinates
         current_hospital = predecessors[current_hospital];
     }
+
+    // Print traversal order
+    cout << "Traversal Order:" << endl;
+    for (int i = 0; i < traversal_order.size(); i++)
+    {
+        cout << traversal_order[i];
+        if (i < traversal_order.size() - 1)
+        {
+            cout << " -> ";
+        }
+    }
+    cout << endl;
 
     return shortest_path;
 }
@@ -343,7 +351,8 @@ int main()
         lat_long_vector.close();
     }
 
-    unordered_map<string, unordered_map<string, float>> distances = intialize_graph(filtered);
+    unordered_map<string, unordered_map<string, float>> distances = initialize_graph(filtered, source.name, destination.name);
     unordered_map<string, Hospital> shortest_path = dijkstra(distances, source.name, destination.name);
-    cout << "The distance between " << source.name << " and " << destination.name << " is : " << calculate_distance(source.latitude, source.longitude, destination.latitude, destination.longitude);
+    cout << endl
+         << "The distance between " << source.name << " and " << destination.name << " is : " << calculate_distance(source.latitude, source.longitude, destination.latitude, destination.longitude);
 }
