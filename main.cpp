@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <cstdlib>
 #include <cmath>
+#include <queue>
+#include <unordered_set>
 
 using namespace std;
 
@@ -18,12 +20,27 @@ struct Hospital
     int rating_overall;
     float longitude;
     float latitude;
-    vector<Hospital> neighbors;
 
     Hospital(){};
     Hospital(string name, string city, string state, int rating) : name(name), city(city), state(state), rating_overall(rating){};
 
-    void setName(const string &name) { this->name = name; }
+    Hospital(const Hospital &other)
+        : name(other.name),
+          city(other.city),
+          state(other.state),
+          rating_overall(other.rating_overall),
+          longitude(other.longitude),
+          latitude(other.latitude){};
+
+    Hospital(const string name0, int longitude0, int latitude0)
+        : name(name0),
+          latitude(latitude0),
+          longitude(longitude0){};
+
+    void setName(const string &name)
+    {
+        this->name = name;
+    }
     void setCity(const string &city) { this->city = city; }
     void setLongitude(int longitude) { this->longitude = longitude; }
     void setLatitude(int latitude) { this->latitude = latitude; }
@@ -95,6 +112,14 @@ struct Data
     }
 };
 
+struct CompareDistance
+{
+    bool operator()(const pair<string, float> &a, const pair<string, float> &b)
+    {
+        return a.second > b.second; // Min heap based on distance
+    }
+};
+
 vector<Hospital> filter_by_state(string state, vector<Hospital> &hospitals)
 {
     vector<Hospital> filtered;
@@ -128,10 +153,31 @@ Hospital get_starting_hospital(vector<Hospital> &filtered)
     }
     return source;
 }
+Hospital get_destination_hospital(vector<Hospital> &filtered)
+{
+    Hospital dest;
+
+    string dest_hospital_string;
+    cout << "Enter the name of the hospital you would like to go to: " << endl;
+    cin >> std::ws; // Clear whitespace characters from the input buffer
+    getline(cin, dest_hospital_string);
+
+    for (Hospital &hospital : filtered)
+    {
+        if (hospital.name == dest_hospital_string)
+        {
+            dest = hospital;
+            break;
+        }
+    }
+    return dest;
+}
 
 double toRadians(double degrees)
+
 {
-    return degrees * (3.14159 / 180.0);
+    double pi = 3.14159265358979323846;
+    return degrees * (pi / 180.0);
 }
 
 float calculate_distance(float lat1, float long1, float lat2, float long2) // calculates distance between coords using Haversine formula - adapted from https://stackoverflow.com/questions/1420045/how-to-find-distance-from-the-latitude-and-longitude-of-two-locations/1422562#1422562
@@ -147,7 +193,7 @@ float calculate_distance(float lat1, float long1, float lat2, float long2) // ca
     return distance;
 }
 
-unordered_map<string, unordered_map<string, float>> initialize_graph(vector<Hospital> &filtered)
+unordered_map<string, unordered_map<string, float>> intialize_graph(vector<Hospital> &filtered)
 { // creates graph using filtered hospitals vector
     unordered_map<string, unordered_map<string, float>> distance_map;
     for (Hospital source_hospital : filtered)
@@ -170,19 +216,80 @@ unordered_map<string, unordered_map<string, float>> initialize_graph(vector<Hosp
     return distance_map;
 }
 
+unordered_map<string, Hospital> dijkstra(const unordered_map<string, unordered_map<string, float>> &distances, const string &start, const string &end)
+{
+    unordered_map<string, float> shortest_distances;
+    unordered_map<string, string> predecessors; // Map to store predecessors in the shortest path
+    priority_queue<pair<float, string>, vector<pair<float, string>>, greater<pair<float, string>>> pq;
+
+    // Initialize distances and predecessors
+    for (const auto &[hospital, _] : distances)
+    {
+        shortest_distances[hospital] = numeric_limits<float>::infinity();
+        predecessors[hospital] = "";
+    }
+
+    pq.push({0, start});
+    shortest_distances[start] = 0;
+
+    while (!pq.empty())
+    {
+        auto top_pair = pq.top(); // Get the top pair from the priority queue
+        pq.pop();                 // Remove the top pair from the priority queue
+
+        float curr_distance = top_pair.first;   // Extract the distance from the pair
+        string curr_hospital = top_pair.second; // Extract the hospital name from the pair
+
+        if (curr_distance > shortest_distances[curr_hospital])
+        {
+            continue; // Skip if we've found a shorter path already
+        }
+
+        if (curr_hospital == end) // Terminate when reaching the destination
+        {
+            break;
+        }
+
+        for (const auto &[neighbor, edge_weight] : distances.at(curr_hospital))
+        {
+            float new_distance = curr_distance + edge_weight;
+            if (new_distance < shortest_distances[neighbor])
+            {
+                shortest_distances[neighbor] = new_distance;
+                pq.push({new_distance, neighbor});
+                predecessors[neighbor] = curr_hospital; // Update predecessor for the shortest path
+            }
+        }
+    }
+
+    // Reconstruct the shortest path
+    unordered_map<string, Hospital> shortest_path;
+    string current_hospital = end;
+    while (!current_hospital.empty())
+    {
+        shortest_path[current_hospital] = Hospital(current_hospital, 0, 0); // Create Hospital object with dummy coordinates
+        current_hospital = predecessors[current_hospital];
+    }
+
+    return shortest_path;
+}
+
 int main()
 {
     Data data;
     vector<Hospital> hospitals = data.parseData("hospitals.csv");
 
     string user_state;
-    std::cout << "Enter a state abbreviation. (Ex: Texas would be entered as TX)" << endl;
-    std::cin >> user_state;
+    cout << "Enter a state abbreviation. (Ex: Texas would be entered as TX)" << endl;
+    cin >> user_state;
 
     vector<Hospital> filtered = filter_by_state(user_state, hospitals);
-    std::cout << "There are " << filtered.size() << " hospitals in your state" << endl;
+    cout << "There are " << filtered.size() << " hospitals in your state" << endl;
 
     Hospital source = get_starting_hospital(filtered);
+    cout << endl;
+
+    Hospital destination = get_destination_hospital(filtered);
     cout << endl;
 
     // Write hospital name, city, and state to a txt file
@@ -235,4 +342,8 @@ int main()
         }
         lat_long_vector.close();
     }
+
+    unordered_map<string, unordered_map<string, float>> distances = intialize_graph(filtered);
+    unordered_map<string, Hospital> shortest_path = dijkstra(distances, source.name, destination.name);
+    cout << "The distance between " << source.name << " and " << destination.name << " is : " << calculate_distance(source.latitude, source.longitude, destination.latitude, destination.longitude);
 }
