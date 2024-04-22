@@ -10,6 +10,7 @@
 #include <queue>
 #include <unordered_set>
 #include <limits>
+#include <chrono>
 
 using namespace std;
 
@@ -223,7 +224,7 @@ unordered_map<string, Hospital> dijkstra(const unordered_map<string, unordered_m
     vector<string> traversal_order;
 
     // Initialize distances and predecessors
-    for (const auto &[hospital, _] : distances)
+    for (const auto &[hospital, _] : distances) // accesses hospitals, ignores map which is the second element in the pair
     {
         shortest_distances[hospital] = numeric_limits<float>::infinity();
         predecessors[hospital] = "";
@@ -269,13 +270,14 @@ unordered_map<string, Hospital> dijkstra(const unordered_map<string, unordered_m
     }
 
     // Print traversal order
-    cout << "Traversal Order:" << endl;
+    cout << "The quickest path to visit " << end << " from " << start << " with intermediate hospital visits is shown below: " << endl;
+
     for (int i = 0; i < traversal_order.size(); i++)
     {
-        cout << traversal_order[i];
+        cout << i << ". " << traversal_order[i];
         if (i < traversal_order.size() - 1)
         {
-            cout << " -> ";
+            cout << endl;
         }
     }
     cout << endl;
@@ -289,17 +291,25 @@ int main()
     vector<Hospital> hospitals = data.parseData("hospitals.csv");
 
     string user_state;
-    cout << "Enter a state abbreviation. (Ex: Texas would be entered as TX)" << endl;
+    cout << endl << endl << "Enter a state abbreviation. (Ex: Texas would be entered as TX)" << endl;
     cin >> user_state;
 
     vector<Hospital> filtered = filter_by_state(user_state, hospitals);
-    cout << "There are " << filtered.size() << " hospitals in your state" << endl;
+    cout << endl
+         << endl
+         << "There are " << filtered.size() << " hospitals in your state" << endl
+         << endl;
 
     Hospital source = get_starting_hospital(filtered);
     cout << endl;
 
     Hospital destination = get_destination_hospital(filtered);
     cout << endl;
+
+    cout << endl
+         << endl
+         << "Please wait while we gather hopsital data..." << endl
+         << endl;
 
     // Write hospital name, city, and state to a txt file
     ofstream source_hospital_data("source_hospital_data.txt");
@@ -352,8 +362,23 @@ int main()
         lat_long_vector.close();
     }
 
-    unordered_map<string, unordered_map<string, float>> distances = initialize_graph(filtered, source.name, destination.name);
-    unordered_map<string, Hospital> shortest_path = dijkstra(distances, source.name, destination.name);
     cout << endl
-         << "The distance between " << source.name << " and " << destination.name << " is : " << calculate_distance(source.latitude, source.longitude, destination.latitude, destination.longitude);
+         << "Please wait while we intialize the graph of hospitals..." << endl
+         << endl;
+    unordered_map<string, unordered_map<string, float>> distances = initialize_graph(filtered, source.name, destination.name);
+
+    cout << endl
+         << "Executing Dijkstra's algorithm..." << endl
+         << endl;
+
+    // timer for dijsktras runtime
+    auto dijkstras_timer_start = std::chrono::high_resolution_clock::now();
+    unordered_map<string, Hospital> shortest_path = dijkstra(distances, source.name, destination.name);
+    auto dijkstras_timer_stop = std::chrono::high_resolution_clock::now();
+    auto dijkstras_duration = std::chrono::duration_cast<std::chrono::microseconds>(dijkstras_timer_stop - dijkstras_timer_start);
+
+    cout << endl
+         << endl
+         << "Dijsktra's algorithm has taken " << dijkstras_duration.count() << " microseconds to find the shortest path from "
+         << source.name << " to " << destination.name << endl << endl;
 }

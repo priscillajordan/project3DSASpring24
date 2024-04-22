@@ -27,7 +27,6 @@ with open('source_hospital_data.txt', 'r') as file:
 
 api_key = "AIzaSyAkpts4X2Oj-S6ogvRmUaV_fjcoS_FJWCs"
 latitude, longitude = get_coordinates(hospital_name, city, state, api_key)
-print(f" {hospital_name}'s location is \nLatitude: {latitude}, Longitude: {longitude}")
 f = open("lat_long.txt", "w");
 f.write(str(latitude))
 f.write("\n")
