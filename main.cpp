@@ -330,8 +330,7 @@ vector<string> bellman(const unordered_map<string, unordered_map<string, float>>
 
     // since we created the graph, we know there are no negative weight cycles, but to
     // fully implement bellman ford, have to check for negative weight cycles
-    for (unsigned int i = 1; i < distances.size(); ++i)
-    {
+
         for (const auto &node : distances)
         {
             string current_hosp = node.first;
@@ -347,7 +346,6 @@ vector<string> bellman(const unordered_map<string, unordered_map<string, float>>
                 }
             }
         }
-    }
 
     print_shortest_path(predecessors, start, end);
     return {}; // no return is needed since print_shortest_path gives an output
