@@ -1,0 +1,4 @@
+Python 3.12.1  is neccessary to run the scripts, and we used c++ 17. 
+Hospital Data set should be in the same directory as main.cpp and the python scripts. The program can be run using the terminal "g++ -o main main.cpp" and the "./main". 
+If you experience issues with the .vscode folder, or see that there are many errors in the main file, make sure you're compiler is up to date. I had to unistall 
+and reuploaded following this link. https://code.visualstudio.com/docs/cpp/config-mingw Dont forget to edit your system environment varibles like the link says. 
