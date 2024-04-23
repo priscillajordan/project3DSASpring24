@@ -365,7 +365,6 @@ int main()
 
     vector<Hospital> filtered = filter_by_state(user_state, hospitals);
     cout << endl
-         << endl
          << "There are " << filtered.size() << " hospitals in your state" << endl
          << endl;
 
@@ -375,8 +374,8 @@ int main()
     Hospital destination = get_destination_hospital(filtered);
     cout << endl;
 
+cout << " ----------------------------------------------------------------------------------------------------------------" << endl;
     cout << endl
-         << endl
          << "Please wait while we gather hospital data..." << endl
          << endl;
 
@@ -451,6 +450,8 @@ int main()
          << "Dijsktra's algorithm has taken " << dijkstras_duration.count() << " microseconds to find the shortest path from "
          << source.name << " to " << destination.name << endl
          << endl;
+        
+    cout << " ----------------------------------------------------------------------------------------------------------------" << endl;
 
     // implement bellman ford
     cout << endl
@@ -469,7 +470,6 @@ int main()
     auto bellmans_duration = std::chrono::duration_cast<std::chrono::microseconds>(bellmans_timer_stop - bellmans_timer_start);
 
     cout << endl
-         << endl
          << "The Bellman-Ford algorithm has taken " << bellmans_duration.count() << " microseconds to find the shortest path from "
          << source.name << " to " << destination.name << endl
          << endl;
